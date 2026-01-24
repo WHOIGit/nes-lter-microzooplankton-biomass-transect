@@ -9,9 +9,9 @@ Libraries used
 
 ```{r}
 # two of the required packages are installed from GitHub
-# library(remotes)
-# remotes::install_github("EDIorg/EMLassemblyline")
-# remotes::install_github("WHOIGit/ediutilities")
+ # library(remotes)
+ # remotes::install_github("EDIorg/EMLassemblyline")
+ # remotes::install_github("WHOIGit/ediutilities")
 
 library(EMLassemblyline)
 library(ediutilities)
@@ -41,7 +41,7 @@ Read the Excel metadata template and generate text templates used by
 EMLassemblyline
 
 ```{r}
-excel_to_template(here('nes-lter-minimal-info'), 'nes-lter-minimal', rights='CC0')
+excel_to_template(here('nes-lter-minimal-info'), 'nes-lter-minimal', rights='CC0', file_type=".md",)
 ```
 Generate the package and insert the parent project node into the resulting EML
 
