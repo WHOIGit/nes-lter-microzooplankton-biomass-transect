@@ -1,2 +1,1 @@
-This is a minimal demonstration of the EDI EML assembly line workflow based on
-a small subset of NES-LTER nutrient data.
+This dataset reports estimates of microzooplankton biomass for the Northeast U.S. Shelf Long Term Ecological Research program transect from 2018 through 2023. Microzooplankton biomass estimates are characterized into the functional groups dinoflagellates and ciliates and reported for two size classes, above and below 20 μm in length. Estimates are derived from microscope pictures taken from samples preserved in Lugol’s acid and collected from the CTD rosette on NES-LTER cruises. Biomass estimates are reported in micrograms of carbon per liter. 

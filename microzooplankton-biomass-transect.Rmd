@@ -1,0 +1,112 @@
+---
+title: "NES-LTER microzooplankton biomass transect"
+author: "Kate Morkeski"
+date: "r Sys.Date()"
+output: html_notebook
+---
+
+Libraries used
+
+```{r}
+# two of the required packages are installed from GitHub
+ # library(remotes)
+ # remotes::install_github("EDIorg/EMLassemblyline")
+ # remotes::install_github("WHOIGit/ediutilities")
+
+library(EMLassemblyline)
+library(ediutilities)
+library(here)
+library(lubridate)
+library(pander)
+library(stringr)
+library(readr)
+library(data.table)
+
+# Set the time zone to GMT (UTC)
+Sys.setenv(TZ = 'GMT')
+
+```
+
+Read data tables
+
+```{r}
+biomass <- read.csv(here('nes-lter-mzb-biomass-input.csv'))
+biomass$cruise <- str_to_upper(biomass$cruise)
+biomass$date = ymd_hms(biomass$date)
+biomass_date <- biomass$date
+biomass$date_time_utc_sampling <- as.POSIXct(biomass$date_time_utc_sampling)
+#biomass$date_time_utc_sampling <- format_ISO8601(biomass$date, usetz = TRUE)
+biomass = subset(biomass, select = -date)
+#write_csv(biomass, "nes-lter-mzb-biomass.csv")
+# use this method of writing data table to allow midnight timestamps to be printed
+fwrite(biomass, "nes-lter-mzb-biomass.csv", dateTimeAs = "ISO")
+
+props <- read.csv(here('nes-lter-mzb-cellProperties-input.csv'))
+props$cruise <- str_to_upper(props$cruise)
+props$date_time_utc_sampling <- as.POSIXct(props$date_time_utc_sampling)
+#write_csv(props, "nes-lter-mzb-cellProperties.csv")
+fwrite(props, "nes-lter-mzb-cellProperties.csv", na = NaN, dateTimeAs = "ISO")
+
+conv <- read.csv(here('nes-lter-mzb-sizeConversion-input.csv'))
+conv$cruise <- str_to_upper(conv$cruise)
+conv$cast <- str_replace(conv$cast, "'", "") 
+conv$niskin <- str_replace(conv$niskin, "'", "") 
+conv$niskin <- paste0('"', conv$niskin, '"')
+write_csv(conv, "nes-lter-mzb-sizeConversion.csv", na = "NaN")
+
+```
+
+Generate basic summary of data table
+
+```{r}
+# Just for inspecting the summary: change all character columns to factor
+DF <- biomass
+DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], as.factor)
+pander::pander(summary(DF))
+
+```
+
+Read the Excel metadata template and generate text templates used by
+EMLassemblyline
+
+```{r}
+excel_to_template(here('nes-lter-mzb-info'), 'nes-lter-mzb', rights='CC0', file_type=".md",)
+  
+excel_template <- 'nes-lter-mzb-info.xlsx'
+
+sheet_to_tsv(excel_template, 'ColumnHeadersBiomass', 'attributes_nes-lter-mzb-biomass.txt')
+sheet_to_tsv(excel_template, 'ColumnHeadersCellProperties', 'attributes_nes-lter-mzb-cellProperties.txt')
+sheet_to_tsv(excel_template, 'ColumnHeadersSizeConversion', 'attributes_nes-lter-mzb-sizeConversion.txt')
+sheet_to_tsv(excel_template, 'CategoricalVariables', 'catvars_nes-lter-mzb-cellProperties.txt')
+
+sheet_to_tsv(excel_template, 'Personnel', 'personnel.txt')
+
+sheet_to_tsv(excel_template, 'Keywords', 'keywords.txt')
+
+sheet_to_tsv(excel_template, 'CustomUnits', 'custom_units.txt')
+
+```
+Generate the package and insert the parent project node into the resulting EML
+
+```{r}
+# set package ID
+pkg_id <- 'knb-lter-nes.36.1' 
+
+make_eml(here(),
+         dataset.title=' Microzooplankton biomass on the Northeast US Shelf LTER Transect, ongoing since 2018',
+         data.table= c('nes-lter-mzb-biomass.csv', 'nes-lter-mzb-cellProperties.csv', 'nes-lter-mzb-sizeConversion.csv'),
+         data.table.description= c('microzooplantkon biomass', 'microzooplantkon cell properties', 'microzooplankton size conversion'),
+         #other.entity = 'EDI_DataPackage_MZBiomass_MicrozooplanktonImages_PLACEHOLDER.zip',
+         #other.entity.name = 'nes-lter-MZBiomass-Microzooplankton-Images',
+         #other.entity.description = 'Zip file of microscope images. Includes folders for each cruise in the dataset. Within each cruise folder there is a folder for each unique station and depth sampled, with up to 2 depths per station. Depths are denoted as “D1” or “D2” when multiple depths were sampled at a station, and cast and niskin numbers for each sample are indicated in the Size Conversion file. Within each station/depth folder, there are 2 folders, one for the raw microscope images with the magnification indicated in the file name of each picture, and one folder with the final cropped images used to calculate the biomass reported in the Biomass table after filtering out non-microzooplankton manually.',
+         data.table.name = c('MZBiomass_Biomass', 'MZBiomass_CellProperties', 'MZBiomass_SizeConversion'),
+         temporal.coverage = temporal_coverage(biomass_date),
+         geographic.description = "NES-LTER Transect",
+         geographic.coordinates = geographic_coordinates(biomass$latitude, biomass$longitude),
+         maintenance.description = "ongoing",
+         user.id = "NES",
+         user.domain = "LTER",
+         package.id = pkg_id)
+
+project_insert(pkg_id, "parent_project_NESI-II_RAPID.txt")
+```
