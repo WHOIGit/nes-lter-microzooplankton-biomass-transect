@@ -1,3 +1,2 @@
-# minimal-edi-package
-Minimal EML assembly line example, including a small subset of an NES-LTER
-dataset.
+# nes-lter-microzooplankton-biomass-transect
+EML assembly of a microzooplankton biomass data package from the NES-LTER shipboard transect. 
