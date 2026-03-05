@@ -21,6 +21,7 @@ library(pander)
 library(stringr)
 library(readr)
 library(data.table)
+library(dplyr)
 
 # Set the time zone to GMT (UTC)
 Sys.setenv(TZ = 'GMT')
@@ -37,24 +38,56 @@ biomass_date <- biomass$date
 biomass$date_time_utc_sampling <- as.POSIXct(biomass$date_time_utc_sampling)
 #biomass$date_time_utc_sampling <- format_ISO8601(biomass$date, usetz = TRUE)
 biomass = subset(biomass, select = -date)
-#write_csv(biomass, "nes-lter-mzb-biomass.csv")
-# use this method of writing data table to allow midnight timestamps to be printed
-fwrite(biomass, "nes-lter-mzb-biomass.csv", dateTimeAs = "ISO")
+biomass <- biomass |>
+  mutate(latitude = round(latitude, 5)) |>
+  mutate(longitude = round(longitude, 5)) |>
+  mutate(depth = round(depth, 1)) |>
+  mutate(dino_small_biomass = round(dino_small_biomass, 1)) |>
+  mutate(dino_large_biomass = round(dino_large_biomass, 1)) |>
+  mutate(cil_small_biomass = round(cil_small_biomass, 1)) |>
+  mutate(cil_large_biomass = round(cil_large_biomass, 1)) |>
+  mutate(other_biomass = round(other_biomass, 1)) 
+# use this method of writing data table for datetime format
+fwrite(biomass, "nes-lter-mzb-biomass.csv", na = NaN, dateTimeAs = "ISO")
 
 props <- read.csv(here('nes-lter-mzb-cellProperties-input.csv'))
 props$cruise <- str_to_upper(props$cruise)
 props$date_time_utc_sampling <- as.POSIXct(props$date_time_utc_sampling)
-#write_csv(props, "nes-lter-mzb-cellProperties.csv")
+props <- props |>
+  mutate(latitude = round(latitude, 5)) |>
+  mutate(longitude = round(longitude, 5)) |>
+  mutate(depth = round(depth, 1)) |>
+  mutate(tripos_h_px = round(tripos_h_px, 0)) |>
+  mutate(tripos_d_px = round(tripos_d_px, 0)) |>
+  mutate(major_axis_px = round(major_axis_px, 0)) |>
+  mutate(minor_axis_px = round(minor_axis_px, 0)) 
+# use this method of writing data table for datetime format
 fwrite(props, "nes-lter-mzb-cellProperties.csv", na = NaN, dateTimeAs = "ISO")
 
 conv <- read.csv(here('nes-lter-mzb-sizeConversion-input.csv'))
 conv$cruise <- str_to_upper(conv$cruise)
 conv$cast <- str_replace(conv$cast, "'", "") 
+conv$cast <- as.integer(conv$cast)
 conv$niskin <- str_replace(conv$niskin, "'", "") 
 conv$niskin <- paste0('"', conv$niskin, '"')
-write_csv(conv, "nes-lter-mzb-sizeConversion.csv", na = "NaN")
+#write_csv(conv, "nes-lter-mzb-sizeConversion.csv", na = "NaN")
+fwrite(conv, "nes-lter-mzb-sizeConversion.csv", na = NaN, dateTimeAs = "ISO")
 
 ```
+
+```{r}
+# check cruise and station IDs across tables
+
+unique(biomass$cruise)
+unique(props$cruise)
+unique(conv$cruise)
+
+unique(biomass$station)
+unique(props$station)
+unique(conv$station)
+
+```
+
 
 Generate basic summary of data table
 
@@ -65,6 +98,13 @@ DF[sapply(DF, is.character)] <- lapply(DF[sapply(DF, is.character)], as.factor)
 pander::pander(summary(DF))
 
 ```
+
+```{r}
+# Map Check
+map_locs(df = biomass, xvar = "longitude", yvar = "latitude",
+         region = "transect", colorvar = "cruise")
+```
+
 
 Read the Excel metadata template and generate text templates used by
 EMLassemblyline
